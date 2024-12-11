@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import Image from "next/image";
 
 export default async function Home() {
-  const posts = await db.query.posts.findMany();
+  const notes = await db.query.notes.findMany();
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -51,8 +51,8 @@ export default async function Home() {
             Read our docs
           </a>
         </div>
-        {posts.map((post) => (
-          <div key={post.id}>{post.name}</div>
+        {notes.map((note) => (
+          <div key={note.id}>{note.title}</div>
         ))}
       </main>
       <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">

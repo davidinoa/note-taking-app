@@ -8,6 +8,9 @@ import {
   pgTableCreator,
   timestamp,
   varchar,
+  text,
+  pgEnum,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -18,11 +21,34 @@ import {
  */
 export const createTable = pgTableCreator((name) => `note-taking-app_${name}`);
 
-export const posts = createTable(
-  "post",
+// Create an enum for note status
+export const noteStatusEnum = pgEnum("note_status", [
+  "draft",
+  "published",
+  "archived",
+]);
+
+// Tags table
+export const tags = createTable(
+  "tag",
   {
     id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    name: varchar("name", { length: 256 }),
+    name: varchar("name", { length: 50 }).notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [index("tag_name_idx").on(table.name)]
+);
+
+// Notes table
+export const notes = createTable(
+  "note",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    title: varchar("title", { length: 255 }).notNull(),
+    content: text("content"),
+    status: noteStatusEnum("status").default("draft").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
@@ -30,7 +56,29 @@ export const posts = createTable(
       () => new Date()
     ),
   },
-  (example) => ({
-    nameIndex: index("name_idx").on(example.name),
-  })
+  (table) => [index("note_title_idx").on(table.title)]
+);
+
+// Junction table for notes and tags (many-to-many relationship)
+export const notesToTags = createTable(
+  "notes_to_tags",
+  {
+    noteId: integer("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    tagId: integer("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.noteId, table.tagId],
+      name: "notes_tags_pkey",
+    }),
+    index("note_id_idx").on(table.noteId),
+    index("tag_id_idx").on(table.tagId),
+  ]
 );
