@@ -1,16 +1,13 @@
-// Example model schema from the Drizzle docs
-// https://orm.drizzle.team/docs/sql-schema-declaration
-
 import { sql } from "drizzle-orm";
 import {
   index,
-  integer,
   pgTableCreator,
   timestamp,
   varchar,
   text,
   pgEnum,
   primaryKey,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -21,18 +18,16 @@ import {
  */
 export const createTable = pgTableCreator((name) => `note-taking-app_${name}`);
 
-// Create an enum for note status
 export const noteStatusEnum = pgEnum("note_status", [
   "draft",
   "published",
   "archived",
 ]);
 
-// Tags table
 export const tags = createTable(
   "tag",
   {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    id: uuid("id").primaryKey().defaultRandom(),
     name: varchar("name", { length: 50 }).notNull().unique(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -41,11 +36,10 @@ export const tags = createTable(
   (table) => [index("tag_name_idx").on(table.name)]
 );
 
-// Notes table
 export const notes = createTable(
   "note",
   {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 255 }).notNull(),
     content: text("content"),
     status: noteStatusEnum("status").default("draft").notNull(),
@@ -59,14 +53,13 @@ export const notes = createTable(
   (table) => [index("note_title_idx").on(table.title)]
 );
 
-// Junction table for notes and tags (many-to-many relationship)
 export const notesToTags = createTable(
   "notes_to_tags",
   {
-    noteId: integer("note_id")
+    noteId: uuid("note_id")
       .notNull()
       .references(() => notes.id, { onDelete: "cascade" }),
-    tagId: integer("tag_id")
+    tagId: uuid("tag_id")
       .notNull()
       .references(() => tags.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true })
