@@ -1,38 +1,57 @@
-import { ClerkProvider } from "@clerk/nextjs";
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
+import AppHeader from '@/components/app-header'
+import { ClerkProvider } from '@clerk/nextjs'
+import type { Metadata } from 'next'
+import localFont from 'next/font/local'
+import './globals.css'
 
 const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
+  src: './fonts/GeistVF.woff',
+  variable: '--font-geist-sans',
+  weight: '100 900',
+})
+
 const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+  src: './fonts/GeistMonoVF.woff',
+  variable: '--font-geist-mono',
+  weight: '100 900',
+})
+
+const merriweatherSerif = localFont({
+  src: [
+    {
+      path: './fonts/Merriweather.woff2',
+      style: 'normal',
+    },
+    {
+      path: './fonts/MerriweatherItalic.woff2',
+      style: 'italic',
+    },
+  ],
+  variable: '--font-merriweather-serif',
+  weight: '100 900',
+})
 
 export const metadata: Metadata = {
-  title: "Notes",
-  description: "A simple app to save your notes",
-};
+  title: 'Notes',
+  description: 'A simple app to save your notes',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+      <html
+        lang="en"
+        suppressHydrationWarning
+        className={`${geistSans.variable} ${geistMono.variable} ${merriweatherSerif.variable} antialiased`}>
+        <body suppressHydrationWarning>
+          <AppHeader />
           {children}
         </body>
       </html>
     </ClerkProvider>
-  );
+  )
 }
