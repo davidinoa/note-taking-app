@@ -2,6 +2,7 @@ import AppHeader from '@/components/app-header'
 import { ClerkProvider } from '@clerk/nextjs'
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
+import { Suspense } from 'react'
 import './globals.css'
 
 const geistSans = localFont({
@@ -48,8 +49,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${merriweatherSerif.variable} antialiased`}>
         <body suppressHydrationWarning>
-          <AppHeader />
-          {children}
+          <Suspense fallback={<div>Loading...</div>}>
+            <AppHeader />
+            {children}
+          </Suspense>
         </body>
       </html>
     </ClerkProvider>
