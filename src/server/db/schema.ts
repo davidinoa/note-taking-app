@@ -1,14 +1,14 @@
 import { sql } from 'drizzle-orm'
 import {
+  customType,
   index,
+  pgEnum,
   pgTableCreator,
+  text,
   timestamp,
   varchar,
-  text,
-  pgEnum,
-  primaryKey,
-  uuid,
 } from 'drizzle-orm/pg-core'
+import { nanoid } from 'nanoid'
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -16,7 +16,19 @@ import {
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator((name) => `note-taking-app_${name}`)
+export const createTable = pgTableCreator((name) => `notes_app_${name}`)
+
+const NANO_ID_LENGTH = 10
+
+const nanoId = customType<{ data: string }>({
+  dataType: () => `varchar(${NANO_ID_LENGTH})`,
+  toDriver: (value: string) => value,
+})
+
+const createId = (name = 'id') =>
+  nanoId(name)
+    .notNull()
+    .$default(() => nanoid())
 
 export const noteStatusEnum = pgEnum('note_status', [
   'draft',
@@ -27,7 +39,7 @@ export const noteStatusEnum = pgEnum('note_status', [
 export const tags = createTable(
   'tag',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: createId().primaryKey(),
     name: varchar('name', { length: 50 }).notNull().unique(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -39,7 +51,7 @@ export const tags = createTable(
 export const notes = createTable(
   'note',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: createId().primaryKey(),
     title: varchar('title', { length: 255 }).notNull(),
     content: text('content'),
     status: noteStatusEnum('status').default('draft').notNull(),
@@ -56,10 +68,11 @@ export const notes = createTable(
 export const notesToTags = createTable(
   'notes_to_tags',
   {
-    noteId: uuid('note_id')
-      .notNull()
-      .references(() => notes.id, { onDelete: 'cascade' }),
-    tagId: uuid('tag_id')
+    id: createId().primaryKey(),
+    noteId: createId('note_id').references(() => notes.id, {
+      onDelete: 'cascade',
+    }),
+    tagId: createId('tag_id')
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -67,10 +80,6 @@ export const notesToTags = createTable(
       .notNull(),
   },
   (table) => [
-    primaryKey({
-      columns: [table.noteId, table.tagId],
-      name: 'notes_tags_pkey',
-    }),
     index('note_id_idx').on(table.noteId),
     index('tag_id_idx').on(table.tagId),
   ],
