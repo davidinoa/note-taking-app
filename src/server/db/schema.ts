@@ -28,7 +28,7 @@ const nanoId = customType<{ data: string }>({
 const createId = (name = 'id') =>
   nanoId(name)
     .notNull()
-    .$default(() => nanoid())
+    .$default(() => nanoid(NANO_ID_LENGTH))
 
 export const noteStatusEnum = pgEnum('note_status', [
   'draft',
