@@ -6,6 +6,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
+    "db:reset": "dotenv -- tsx src/server/db/reset.ts",
     "db:seed": "dotenv -- tsx src/server/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "dev": "next dev --turbopack",
