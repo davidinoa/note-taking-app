@@ -1,8 +1,11 @@
+import { env } from '@/env'
 import { db } from '@/server/db'
 import { notes, notesToTags, tags } from '@/server/db/schema'
 import { faker } from '@faker-js/faker'
 
 async function main() {
+  const userId = env.SEED_USER_ID
+
   // Clear existing data
   await db.delete(notesToTags)
   await db.delete(notes)
@@ -26,7 +29,7 @@ async function main() {
     tagNames.map((name) =>
       db
         .insert(tags)
-        .values({ name })
+        .values({ name, userId })
         .returning()
         .then((res) => res[0]),
     ),
@@ -61,6 +64,7 @@ async function main() {
             'archived',
           ]),
           createdAt: randomDate,
+          userId,
         })
         .returning()
         .then((res) => res[0])
