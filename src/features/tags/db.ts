@@ -10,10 +10,10 @@ export async function fetchTags() {
   return await db.select().from(tags)
 }
 
-export async function createTag(name: string) {
+export async function createTag(name: string, userId: string) {
   await db
     .insert(tags)
-    .values({ name })
+    .values({ name, userId })
     .returning()
     .then(() => {
       revalidateTag('tags')
