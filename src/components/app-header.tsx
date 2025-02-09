@@ -16,7 +16,7 @@ export default function AppHeader() {
       : 'All Notes'
 
   return (
-    <header className="grid min-h-20.5 grid-cols-[1fr_auto_auto] items-center gap-4 border-b px-8">
+    <header className="sticky top-0 z-10 grid max-h-fit min-h-20.5 grid-cols-[1fr_auto_auto] items-center gap-4 border-b bg-white px-8">
       <h1 className="text-2xl font-bold">{heading}</h1>
       <SearchInput />
       <Cog className="text-ds-neutral-500" />

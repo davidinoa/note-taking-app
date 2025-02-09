@@ -1,106 +1,66 @@
-import { db } from '@/server/db'
-import { UserButton } from '@clerk/nextjs'
-import Image from 'next/image'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { fetchNotes } from '@/features/notes/db'
+import { notes } from '@/server/db/schema'
+import { currentUser } from '@clerk/nextjs/server'
+import { Plus } from 'lucide-react'
+import Link from 'next/link'
+import { connection } from 'next/server'
 
 export default async function Home() {
-  const notes = await db.query.notes.findMany()
+  await connection()
+  const user = await currentUser()
+  const userId = user?.id ?? ''
+  const notesWithTags = await fetchNotes(userId)
 
   return (
-    <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-      <nav className="flex w-full justify-end">
-        <UserButton />
-      </nav>
-      <main className="row-start-2 flex flex-col items-center gap-8 sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-center font-[family-name:var(--font-geist-mono)] text-sm sm:text-left">
-          <li className="mb-2">
-            Get started by editing{' '}
-            <code className="rounded-sm bg-black/[.05] px-1 py-0.5 font-semibold dark:bg-white/[.06]">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="ds-md:grid-cols-[18.125rem_1fr] grid w-full grid-rows-1 overflow-auto">
+      <NotesList notesWithTags={notesWithTags} />
+      <div className="max-ds-md:hidden">
+        <h1>Editor</h1>
+      </div>
+    </div>
+  )
+}
 
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-10 items-center justify-center gap-2 rounded-full border border-solid border-transparent px-4 text-sm transition-colors hover:bg-[#383838] sm:h-12 sm:px-5 sm:text-base dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer">
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="flex h-10 items-center justify-center rounded-full border border-solid border-black/[.08] px-4 text-sm transition-colors hover:border-transparent hover:bg-[#f2f2f2] sm:h-12 sm:min-w-44 sm:px-5 sm:text-base dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer">
-            Read our docs
-          </a>
-        </div>
-        {notes.map((note) => (
-          <div key={note.id}>{note.title}</div>
+type NotesListProps = {
+  notesWithTags: (typeof notes.$inferSelect & { tags: string[] })[]
+}
+
+export function NotesList({ notesWithTags }: NotesListProps) {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 p-4">
+      <Button asChild className="h-14 w-full text-lg" size="lg">
+        <Link href="/notes/new">
+          <Plus className="mr-2 h-5 w-5" />
+          Create New Note
+        </Link>
+      </Button>
+
+      <div className="space-y-4">
+        {notesWithTags.map((note) => (
+          <Link
+            key={note.id}
+            href={`/notes/${note.id}`}
+            className="block rounded-lg p-4 transition-colors hover:bg-gray-50">
+            <h2 className="mb-2 text-lg font-semibold">{note.title}</h2>
+            <div className="mb-2 flex flex-wrap gap-2">
+              {note.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+            <time className="text-muted-foreground text-sm">
+              {note.createdAt.toLocaleDateString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </time>
+          </Link>
         ))}
-      </main>
-      <footer className="row-start-3 flex flex-wrap items-center justify-center gap-6">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer">
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer">
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer">
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import AppHeader from '@/components/app-header'
-import { ClerkProvider } from '@clerk/nextjs'
+import { MenuBar } from '@/components/menu-bar'
+import Sidebar from '@/components/sidebar'
+import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Suspense } from 'react'
@@ -37,11 +39,18 @@ export const metadata: Metadata = {
   description: 'A simple app to save your notes',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const mobileLayout = (
+    <div className="ds-md:hidden grid h-screen grid-rows-[auto_1fr_auto]">
+      <AppHeader />
+      <div className="grid grow grid-rows-1 overflow-hidden">{children}</div>
+      <MenuBar />
+    </div>
+  )
   return (
     <ClerkProvider>
       <html
@@ -50,8 +59,19 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${merriweatherSerif.variable} antialiased`}>
         <body suppressHydrationWarning>
           <Suspense fallback={<div>Loading...</div>}>
-            <AppHeader />
-            {children}
+            <SignedIn>
+              <div className="ds-md:grid hidden h-screen grid-rows-[auto_1fr_auto]">
+                <AppHeader />
+                <div className="flex overflow-hidden">
+                  <Sidebar />
+                  <div className="grid grow grid-rows-1 overflow-hidden">
+                    {children}
+                  </div>
+                </div>
+              </div>
+              {mobileLayout}
+            </SignedIn>
+            <SignedOut>{children}</SignedOut>
           </Suspense>
         </body>
       </html>
