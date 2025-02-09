@@ -1,9 +1,12 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignIn } from '@clerk/nextjs'
+import { Suspense } from 'react'
 
 export default function Page() {
   return (
-    <div className="grid place-items-center min-h-screen">
-      <SignIn />
+    <div className="grid min-h-screen place-items-center">
+      <Suspense fallback={<div>Loading...</div>}>
+        <SignIn />
+      </Suspense>
     </div>
-  );
+  )
 }
