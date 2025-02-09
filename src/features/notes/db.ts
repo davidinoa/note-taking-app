@@ -1,8 +1,10 @@
-import { db } from '@/server/db'
+import { db, notes } from '@/server/db'
+import { eq } from 'drizzle-orm'
 
-export async function fetchNotes() {
+export async function fetchNotes(userId: string) {
   return await db.query.notes
     .findMany({
+      where: eq(notes.userId, userId),
       with: {
         notesToTags: {
           with: {

@@ -24,7 +24,7 @@
   --font-family: var(--font-sans);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: hsl(224 71% 4%);
     --foreground: hsl(213 31% 91%);
@@ -47,9 +47,9 @@
     --ring: hsl(216 34% 17%);
     --font-family: var(--font-sans);
 
-    color-scheme: dark;
+    color-scheme: light;
   }
-}
+} */
 
 @theme {
   /* Design System */
@@ -72,6 +72,7 @@
   --color-ds-green-500: hsl(148, 71%, 44%);
   --color-ds-red-100: hsl(356, 100%, 92%);
   --color-ds-red-500: hsl(355, 96%, 60%);
+  --breakpoint-ds-md: 769px;
 
   /* Fonts */
   --font-serif: var(--font-merriweather-serif);
@@ -86,7 +87,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --color-primary: var(--primary);
+  --color-primary: var(--color-ds-blue-500);
   --color-primary-foreground: var(--primary-foreground);
 
   --color-secondary: var(--secondary);
@@ -108,8 +109,8 @@
   --color-card-foreground: var(--card-foreground);
 
   --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius));
+  --radius-lg: calc(var(--radius) + 4px);
 
   --font-family-poppins: var(--font-poppins);
   --font-family-inter: var(--font-inter);
