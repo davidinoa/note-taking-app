@@ -27,7 +27,7 @@ type NotesListProps = {
   notesWithTags: (typeof notes.$inferSelect & { tags: string[] })[]
 }
 
-export function NotesList({ notesWithTags }: NotesListProps) {
+function NotesList({ notesWithTags }: NotesListProps) {
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4">
       <Button asChild className="h-14 w-full text-lg" size="lg">
