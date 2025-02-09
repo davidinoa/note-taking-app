@@ -52,13 +52,13 @@ export default async function RootLayout({
     </div>
   )
   return (
-    <ClerkProvider>
-      <html
-        lang="en"
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${merriweatherSerif.variable} antialiased`}>
-        <body suppressHydrationWarning>
-          <Suspense fallback={<div>Loading...</div>}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${merriweatherSerif.variable} antialiased`}>
+      <body suppressHydrationWarning>
+        <Suspense fallback={<div>Loading...</div>}>
+          <ClerkProvider>
             <SignedIn>
               <div className="ds-md:grid hidden h-screen grid-rows-[auto_1fr_auto]">
                 <AppHeader />
@@ -72,9 +72,9 @@ export default async function RootLayout({
               {mobileLayout}
             </SignedIn>
             <SignedOut>{children}</SignedOut>
-          </Suspense>
-        </body>
-      </html>
-    </ClerkProvider>
+          </ClerkProvider>
+        </Suspense>
+      </body>
+    </html>
   )
 }
