@@ -3,18 +3,32 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useActionFeedback } from '@/hooks/use-action-feedback'
 import { ArrowLeft, Clock, Tag } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useActionState } from 'react'
+import { toast } from 'sonner'
 import { createNote } from './actions'
 
 export default function NoteForm() {
+  const router = useRouter()
   const [state, formAction, isPending] = useActionState(createNote, {
     status: 'IDLE',
     message: null,
     payload: null,
     fieldErrors: null,
     timestamp: Date.now(),
+  })
+
+  useActionFeedback(state, {
+    onSuccess: ({ actionState }) => {
+      toast.success(actionState.message || 'Note created successfully!')
+      router.push('/')
+    },
+    onError: ({ actionState }) => {
+      toast.error(actionState.message || 'Failed to create note')
+    },
   })
 
   return (
@@ -43,7 +57,7 @@ export default function NoteForm() {
         </div>
       </div>
 
-      {state?.message && (
+      {state?.message && state.status === 'ERROR' && (
         <div className="text-sm text-red-500">{state.message}</div>
       )}
 

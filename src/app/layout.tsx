@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Suspense } from 'react'
 import './globals.css'
+import { Toaster } from '@/components/ui/toaster'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -72,6 +73,7 @@ export default async function RootLayout({
               {mobileLayout}
             </SignedIn>
             <SignedOut>{children}</SignedOut>
+            <Toaster />
           </ClerkProvider>
         </Suspense>
       </body>

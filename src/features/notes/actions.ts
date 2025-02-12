@@ -1,21 +1,12 @@
 'use server'
 
+import type { ActionState } from '@/lib/utils/to-action-state'
 import { db, notes, notesToTags, tags } from '@/server/db'
 import { currentUser } from '@clerk/nextjs/server'
-import { eq, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { ZodError } from 'zod'
 import { createFormSchema } from './schema'
-
-type Status = 'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR'
-
-type ActionState = {
-  status: Status
-  message: string | null
-  payload: Record<string, string> | null
-  fieldErrors: Record<string, string[] | undefined> | null
-  timestamp: number
-}
 
 export async function createNote(
   _prevState: ActionState,
@@ -60,7 +51,7 @@ export async function createNote(
         const existingTags = await tx
           .select()
           .from(tags)
-          .where(eq(tags.name, sql`ANY(${tagNames})`))
+          .where(sql`${tags.name} = ANY(ARRAY[${tagNames}]::text[])`)
 
         const existingTagNames = new Set(existingTags.map((tag) => tag.name))
         const newTagNames = tagNames.filter(
@@ -147,7 +138,7 @@ function toActionState({
   status,
   message,
 }: {
-  status: Status
+  status: ActionState['status']
   message: string
 }): ActionState {
   return {
