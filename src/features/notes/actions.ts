@@ -191,6 +191,42 @@ export async function updateNote(
   }
 }
 
+export async function deleteNote(noteId: string): Promise<ActionState> {
+  const user = await currentUser()
+  if (!user?.id) {
+    return toActionState({
+      status: 'ERROR',
+      message: 'You must be logged in to delete a note',
+    })
+  }
+
+  try {
+    const [deletedNote] = await db
+      .delete(notes)
+      .where(sql`${notes.id} = ${noteId} AND ${notes.userId} = ${user.id}`)
+      .returning()
+
+    if (!deletedNote) {
+      return toActionState({
+        status: 'ERROR',
+        message: 'Note not found or you do not have permission to delete it',
+      })
+    }
+
+    revalidatePath('/')
+    return toActionState({
+      status: 'SUCCESS',
+      message: 'Note deleted successfully',
+    })
+  } catch (error) {
+    console.error(error)
+    return toActionState({
+      status: 'ERROR',
+      message: 'Failed to delete note',
+    })
+  }
+}
+
 function fromErrorToActionState(
   error: unknown,
   formData: FormData,

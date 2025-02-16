@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useActionFeedback } from '@/hooks/use-action-feedback'
 import { type notes } from '@/server/db/schema'
-import { ArrowLeft, Clock, Tag } from 'lucide-react'
+import { Archive, ArrowLeft, Clock, Tag, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useActionState } from 'react'
+import { useActionState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { createNote, updateNote } from './actions'
+import { createNote, deleteNote, updateNote } from './actions'
 
 type NoteFormProps = {
   note?: typeof notes.$inferSelect & { tags: string[] }
@@ -19,6 +19,7 @@ type NoteFormProps = {
 
 export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
   const router = useRouter()
+  const [isPendingDelete, startTransition] = useTransition()
   const action = mode === 'create' ? createNote : updateNote
   const [state, formAction, isPending] = useActionState(action, {
     status: 'IDLE',
@@ -44,6 +45,22 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
     },
   })
 
+  const handleDelete = () => {
+    if (!note?.id || mode !== 'edit') return
+
+    if (confirm('Are you sure you want to delete this note?')) {
+      startTransition(async () => {
+        const result = await deleteNote(note.id)
+        if (result.status === 'SUCCESS') {
+          toast.success(result.message || 'Note deleted successfully')
+          router.push('/')
+        } else {
+          toast.error(result.message || 'Failed to delete note')
+        }
+      })
+    }
+  }
+
   return (
     <form
       action={formAction}
@@ -61,7 +78,26 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
             Go Back
           </Button>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={() => {
+              // Add archive handler
+            }}
+            title="Archive note">
+            <Archive className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            onClick={handleDelete}
+            title="Delete note"
+            disabled={mode !== 'edit' || isPendingDelete}>
+            <Trash2 className="text-destructive h-4 w-4" />
+          </Button>
           <Link href="/">
             <Button variant="ghost" type="button">
               Cancel
