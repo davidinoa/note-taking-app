@@ -15,7 +15,6 @@ export default function NotesLayoutClient({
 }: NotesLayoutClientProps) {
   const pathname = usePathname()
 
-  // Check if we're on a specific note page or new note page
   const showFormOnMobile =
     pathname.match(/^\/notes\/[^/]+$/) || pathname === '/notes/new'
 

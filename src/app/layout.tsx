@@ -57,6 +57,12 @@ export default async function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${merriweatherSerif.variable} antialiased`}>
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+      </head>
       <body suppressHydrationWarning>
         <Suspense fallback={<div>Loading...</div>}>
           <ClerkProvider>
