@@ -12,7 +12,7 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { icon: Home, label: 'Home', href: '/' },
+  { icon: Home, label: 'Home', href: '/notes' },
   { icon: Search, label: 'Search', href: '/search' },
   { icon: Download, label: 'Archived', href: '/archived' },
   { icon: Tag, label: 'Tags', href: '/tags' },
