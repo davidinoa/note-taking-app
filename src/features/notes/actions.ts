@@ -13,7 +13,6 @@ export async function createNote(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await currentUser()
-
   if (!user?.id) {
     return toActionState({
       status: 'ERROR',
@@ -28,13 +27,9 @@ export async function createNote(
       tags: formData.get('tags'),
     })
 
-    if (!result.success) {
-      return fromErrorToActionState(result.error, formData)
-    }
-
+    if (!result.success) return fromErrorToActionState(result.error, formData)
     const { title, content, tags: tagNames } = result.data
 
-    // Start a transaction to ensure data consistency
     return await db.transaction(async (tx) => {
       const [note] = await tx
         .insert(notes)
@@ -89,7 +84,6 @@ export async function createNote(
       })
     })
   } catch (error) {
-    console.error('Error creating note:', error)
     return fromErrorToActionState(error, formData)
   }
 }

@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import NoteForm from '@/features/notes/create-form'
 import { fetchNotes } from '@/features/notes/db'
 import { notes } from '@/server/db/schema'
 import { currentUser } from '@clerk/nextjs/server'
@@ -17,7 +18,7 @@ export default async function Home() {
     <div className="ds-md:grid-cols-[18.125rem_1fr] grid w-full grid-rows-1 overflow-auto">
       <NotesList notesWithTags={notesWithTags} />
       <div className="max-ds-md:hidden">
-        <h1>Editor</h1>
+        <NoteForm />
       </div>
     </div>
   )

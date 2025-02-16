@@ -11,7 +11,7 @@ import { useActionState } from 'react'
 import { toast } from 'sonner'
 import { createNote } from './actions'
 
-export default function NoteForm() {
+export default function CreateForm() {
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(createNote, {
     status: 'IDLE',
@@ -36,7 +36,7 @@ export default function NoteForm() {
       action={formAction}
       className="mx-auto w-full max-w-4xl space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <Link href="/notes">
+        <Link href="/">
           <Button
             variant="ghost"
             className="flex items-center gap-2"
