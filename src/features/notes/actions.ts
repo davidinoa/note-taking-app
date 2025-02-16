@@ -88,6 +88,109 @@ export async function createNote(
   }
 }
 
+export async function updateNote(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await currentUser()
+  if (!user?.id) {
+    return toActionState({
+      status: 'ERROR',
+      message: 'You must be logged in to update notes',
+    })
+  }
+
+  try {
+    const result = createFormSchema.safeParse({
+      title: formData.get('title'),
+      content: formData.get('content'),
+      tags: formData.get('tags'),
+    })
+
+    if (!result.success) return fromErrorToActionState(result.error, formData)
+    const { title, content, tags: tagNames } = result.data
+
+    const noteId = formData.get('id')
+    if (!noteId) {
+      return toActionState({
+        status: 'ERROR',
+        message: 'Note ID is required for updating',
+      })
+    }
+
+    return await db.transaction(async (tx) => {
+      // Update the note
+      const [updatedNote] = await tx
+        .update(notes)
+        .set({
+          title,
+          content,
+          updatedAt: new Date(),
+        })
+        .where(
+          sql`${notes.id} = ${noteId.toString()} AND ${notes.userId} = ${user.id}`,
+        )
+        .returning()
+
+      if (!updatedNote) {
+        return toActionState({
+          status: 'ERROR',
+          message: 'Note not found or you do not have permission to update it',
+        })
+      }
+
+      // Delete existing tag relationships
+      await tx
+        .delete(notesToTags)
+        .where(sql`${notesToTags.noteId} = ${updatedNote.id}`)
+
+      if (tagNames.length > 0) {
+        // Batch tag operations for better performance
+        const existingTags = await tx
+          .select()
+          .from(tags)
+          .where(sql`${tags.name} = ANY(ARRAY[${tagNames}]::text[])`)
+
+        const existingTagNames = new Set(existingTags.map((tag) => tag.name))
+        const newTagNames = tagNames.filter(
+          (name) => !existingTagNames.has(name),
+        )
+
+        // Create new tags in batch if needed
+        let newTags: typeof existingTags = []
+        if (newTagNames.length > 0) {
+          newTags = await tx
+            .insert(tags)
+            .values(
+              newTagNames.map((name) => ({
+                userId: user.id,
+                name,
+              })),
+            )
+            .returning()
+        }
+
+        // Create all note-to-tag relationships in one batch
+        const allTags = [...existingTags, ...newTags]
+        await tx.insert(notesToTags).values(
+          allTags.map((tag) => ({
+            noteId: updatedNote.id,
+            tagId: tag.id,
+          })),
+        )
+      }
+
+      revalidatePath('/')
+      return toActionState({
+        status: 'SUCCESS',
+        message: 'Note updated successfully',
+      })
+    })
+  } catch (error) {
+    return fromErrorToActionState(error, formData)
+  }
+}
+
 function fromErrorToActionState(
   error: unknown,
   formData: FormData,

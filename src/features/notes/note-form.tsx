@@ -4,16 +4,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useActionFeedback } from '@/hooks/use-action-feedback'
+import { type notes } from '@/server/db/schema'
 import { ArrowLeft, Clock, Tag } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState } from 'react'
 import { toast } from 'sonner'
-import { createNote } from './actions'
+import { createNote, updateNote } from './actions'
 
-export default function CreateForm() {
+type NoteFormProps = {
+  note?: typeof notes.$inferSelect & { tags: string[] }
+  mode?: 'create' | 'edit'
+}
+
+export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
   const router = useRouter()
-  const [state, formAction, isPending] = useActionState(createNote, {
+  const action = mode === 'create' ? createNote : updateNote
+  const [state, formAction, isPending] = useActionState(action, {
     status: 'IDLE',
     message: null,
     payload: null,
@@ -23,11 +30,17 @@ export default function CreateForm() {
 
   useActionFeedback(state, {
     onSuccess: ({ actionState }) => {
-      toast.success(actionState.message || 'Note created successfully!')
+      toast.success(
+        actionState.message ||
+          `Note ${mode === 'create' ? 'created' : 'updated'} successfully!`,
+      )
       router.push('/')
     },
     onError: ({ actionState }) => {
-      toast.error(actionState.message || 'Failed to create note')
+      toast.error(
+        actionState.message ||
+          `Failed to ${mode === 'create' ? 'create' : 'update'} note`,
+      )
     },
   })
 
@@ -35,6 +48,9 @@ export default function CreateForm() {
     <form
       action={formAction}
       className="mx-auto w-full max-w-4xl space-y-6 p-4">
+      {mode === 'edit' && note && (
+        <input type="hidden" name="id" value={note.id} />
+      )}
       <div className="flex items-center justify-between">
         <Link href="/">
           <Button
@@ -46,13 +62,15 @@ export default function CreateForm() {
           </Button>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/notes">
+          <Link href="/">
             <Button variant="ghost" type="button">
               Cancel
             </Button>
           </Link>
           <Button type="submit" className="bg-blue-500 hover:bg-blue-600">
-            {isPending ? 'Saving...' : 'Save Note'}
+            {isPending
+              ? 'Saving...'
+              : `${mode === 'create' ? 'Save' : 'Update'} Note`}
           </Button>
         </div>
       </div>
@@ -70,7 +88,7 @@ export default function CreateForm() {
             className="border-none px-2 text-3xl font-semibold shadow-none placeholder:text-gray-400"
             required
             disabled={isPending}
-            defaultValue={state?.payload?.title?.toString()}
+            defaultValue={note?.title || state?.payload?.title?.toString()}
           />
           {state?.fieldErrors?.title && (
             <div className="mt-1 text-sm text-red-500">
@@ -88,7 +106,9 @@ export default function CreateForm() {
               placeholder="Add tags separated by commas (e.g. Work, Planning)"
               className="border-none px-2 shadow-none"
               disabled={isPending}
-              defaultValue={state?.payload?.tags?.toString()}
+              defaultValue={
+                note?.tags?.join(', ') || state?.payload?.tags?.toString()
+              }
             />
           </div>
           {state?.fieldErrors?.tags && (
@@ -101,7 +121,11 @@ export default function CreateForm() {
         <div className="flex items-center gap-2 text-gray-500">
           <Clock className="h-4 w-4" />
           <span className="text-sm">
-            {isPending ? 'Saving...' : 'Not yet saved'}
+            {isPending
+              ? 'Saving...'
+              : note?.updatedAt
+                ? `Last updated ${note.updatedAt.toLocaleString()}`
+                : 'Not yet saved'}
           </span>
         </div>
 
@@ -112,7 +136,7 @@ export default function CreateForm() {
             className="min-h-[500px] resize-none border-none px-2 shadow-none"
             required
             disabled={isPending}
-            defaultValue={state?.payload?.content?.toString()}
+            defaultValue={note?.content || state?.payload?.content?.toString()}
           />
           {state?.fieldErrors?.content && (
             <div className="mt-1 text-sm text-red-500">
