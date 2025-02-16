@@ -16,10 +16,12 @@ export default function AppHeader() {
       : 'All Notes'
 
   return (
-    <header className="sticky top-0 z-10 grid max-h-fit min-h-20.5 grid-cols-[1fr_auto_auto] items-center gap-4 border-b bg-white px-8">
-      <h1 className="text-2xl font-bold">{heading}</h1>
-      <SearchInput />
-      <Cog className="text-ds-neutral-500" />
+    <header className="sticky top-0 z-10 flex min-h-[4rem] flex-col gap-3 border-b bg-white p-3 sm:flex-row sm:items-center sm:gap-4 sm:px-6 md:px-8">
+      <h1 className="text-xl font-bold sm:text-2xl">{heading}</h1>
+      <div className="flex flex-1 items-center gap-3">
+        <SearchInput />
+        <Cog className="text-ds-neutral-500 h-5 w-5 shrink-0" />
+      </div>
     </header>
   )
 }
