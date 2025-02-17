@@ -1,12 +1,12 @@
 import AppHeader from '@/components/app-header'
 import { MenuBar } from '@/components/menu-bar'
 import Sidebar from '@/components/sidebar'
+import { Toaster } from '@/components/ui/toaster'
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Suspense } from 'react'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -48,7 +48,9 @@ export default async function RootLayout({
   const mobileLayout = (
     <div className="ds-md:hidden grid h-screen grid-rows-[auto_1fr_auto]">
       <AppHeader />
-      <div className="grid grow grid-rows-1 overflow-hidden">{children}</div>
+      <div className="grid grow grid-rows-1 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {children}
+      </div>
       <MenuBar />
     </div>
   )

@@ -10,7 +10,7 @@ type NotesListProps = {
 
 export default function NotesList({ notesWithTags }: NotesListProps) {
   return (
-    <div className="mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4">
+    <div className="mx-auto space-y-4 p-3 pt-6 sm:space-y-6 sm:p-4">
       <Button
         asChild
         className="h-12 w-full text-base sm:h-14 sm:text-lg"
@@ -21,7 +21,7 @@ export default function NotesList({ notesWithTags }: NotesListProps) {
         </Link>
       </Button>
 
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 pb-24 sm:space-y-4">
         {notesWithTags.map((note) => (
           <Link
             key={note.id}

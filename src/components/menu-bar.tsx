@@ -23,7 +23,7 @@ export function MenuBar() {
   const pathname = usePathname()
 
   return (
-    <nav className="border-border bg-background w-full border-t md:border-none">
+    <nav className="border-border bg-background fixed bottom-0 left-0 w-full border-t md:relative md:border-none">
       <ul className="ds-md:justify-center ds-md:gap-16 flex h-16 items-center justify-around">
         {menuItems.map(({ icon: Icon, label, href }) => {
           const isActive = pathname === href
