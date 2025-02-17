@@ -68,7 +68,7 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
       {mode === 'edit' && note && (
         <input type="hidden" name="id" value={note.id} />
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/">
           <Button
             variant="ghost"
@@ -78,7 +78,7 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
             Go Back
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
@@ -115,16 +115,22 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
         <div className="text-sm text-red-500">{state.message}</div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
-          <Input
+          <Textarea
             name="title"
-            type="text"
             placeholder="Enter a title..."
-            className="border-none px-2 text-3xl font-semibold shadow-none placeholder:text-gray-400"
+            className="[field-sizing:content] min-h-0 resize-none overflow-hidden border-none px-0 text-xl font-semibold shadow-none placeholder:text-gray-400 sm:px-2 sm:text-3xl"
             required
             disabled={isPending}
             defaultValue={note?.title || state?.payload?.title?.toString()}
+            rows={1}
+            onInput={(e) => {
+              // Auto-adjust height based on content
+              const target = e.target as HTMLTextAreaElement
+              target.style.height = 'auto'
+              target.style.height = `${target.scrollHeight}px`
+            }}
           />
           {state?.fieldErrors?.title && (
             <div className="mt-1 text-sm text-red-500">
@@ -135,12 +141,12 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
 
         <div>
           <div className="flex items-center gap-2 text-gray-500">
-            <Tag className="h-4 w-4" />
+            <Tag className="h-4 w-4 shrink-0" />
             <Input
               name="tags"
               type="text"
               placeholder="Add tags separated by commas (e.g. Work, Planning)"
-              className="border-none px-2 shadow-none"
+              className="border-none px-0 shadow-none sm:px-2"
               disabled={isPending}
               defaultValue={
                 note?.tags?.join(', ') || state?.payload?.tags?.toString()
@@ -155,8 +161,8 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
         </div>
 
         <div className="flex items-center gap-2 text-gray-500">
-          <Clock className="h-4 w-4" />
-          <span className="text-sm">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="text-xs sm:text-sm">
             {isPending
               ? 'Saving...'
               : note?.updatedAt
@@ -169,7 +175,7 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
           <Textarea
             name="content"
             placeholder="Start typing your note here..."
-            className="min-h-[500px] resize-none border-none px-2 shadow-none"
+            className="min-h-[300px] resize-none border-none px-0 text-base shadow-none sm:min-h-[500px] sm:px-2"
             required
             disabled={isPending}
             defaultValue={note?.content || state?.payload?.content?.toString()}

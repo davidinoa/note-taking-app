@@ -46,31 +46,49 @@ export async function createNote(
         const existingTags = await tx
           .select()
           .from(tags)
-          .where(sql`${tags.name} = ANY(ARRAY[${tagNames}]::text[])`)
+          .where(
+            sql`${tags.name} IN (${tagNames.map((tag) => `'${tag.replace(/'/g, "''")}'`).join(',')})`,
+          )
 
-        const existingTagNames = new Set(existingTags.map((tag) => tag.name))
-        const newTagNames = tagNames.filter(
-          (name) => !existingTagNames.has(name),
+        const existingTagsByName = new Map(
+          existingTags.map((tag) => [tag.name, tag]),
         )
 
-        // Create new tags in batch if needed
-        let newTags: typeof existingTags = []
-        if (newTagNames.length > 0) {
-          newTags = await tx
-            .insert(tags)
-            .values(
-              newTagNames.map((name) => ({
+        // Get or create user-specific tags
+        const userTags = await Promise.all(
+          tagNames.map(async (name) => {
+            const existingTag = existingTagsByName.get(name)
+            if (existingTag?.userId === user.id) {
+              return existingTag
+            }
+            // If tag exists but belongs to another user, or doesn't exist at all
+            const [userTag] = await tx
+              .insert(tags)
+              .values({
                 userId: user.id,
                 name,
-              })),
-            )
-            .returning()
-        }
+              })
+              .onConflictDoNothing()
+              .returning()
+
+            if (!userTag) {
+              // If insert failed due to conflict, fetch the existing tag
+              const [existingUserTag] = await tx
+                .select()
+                .from(tags)
+                .where(
+                  sql`${tags.name} = ${name} AND ${tags.userId} = ${user.id}`,
+                )
+              return existingUserTag
+            }
+
+            return userTag
+          }),
+        )
 
         // Create all note-to-tag relationships in one batch
-        const allTags = [...existingTags, ...newTags]
         await tx.insert(notesToTags).values(
-          allTags.map((tag) => ({
+          userTags.map((tag) => ({
             noteId: note.id,
             tagId: tag.id,
           })),
@@ -78,6 +96,10 @@ export async function createNote(
       }
 
       revalidatePath('/')
+      revalidatePath('/notes')
+      revalidatePath(`/notes/${note.id}`)
+      revalidatePath('/tags')
+
       return toActionState({
         status: 'SUCCESS',
         message: 'Note created successfully',
@@ -101,14 +123,21 @@ export async function updateNote(
   }
 
   try {
+    console.log('Form data:', Object.fromEntries(formData.entries()))
     const result = createFormSchema.safeParse({
       title: formData.get('title'),
       content: formData.get('content'),
       tags: formData.get('tags'),
     })
+    console.log('Parsed result:', result)
+    console.log(
+      'Title after parsing:',
+      result.success ? result.data.title : 'parsing failed',
+    )
 
     if (!result.success) return fromErrorToActionState(result.error, formData)
     const { title, content, tags: tagNames } = result.data
+    console.log('Title before update:', title)
 
     const noteId = formData.get('id')
     if (!noteId) {
@@ -118,75 +147,123 @@ export async function updateNote(
       })
     }
 
-    return await db.transaction(async (tx) => {
-      // Update the note
-      const [updatedNote] = await tx
+    try {
+      // First try a direct update without a transaction
+      const [directUpdateResult] = await db
         .update(notes)
         .set({
           title,
           content,
           updatedAt: new Date(),
         })
-        .where(
-          sql`${notes.id} = ${noteId.toString()} AND ${notes.userId} = ${user.id}`,
-        )
+        .where(sql`id = ${noteId.toString()} AND user_id = ${user.id}`)
         .returning()
 
-      if (!updatedNote) {
+      console.log('Direct update result:', directUpdateResult)
+
+      if (!directUpdateResult) {
         return toActionState({
           status: 'ERROR',
           message: 'Note not found or you do not have permission to update it',
         })
       }
 
-      // Delete existing tag relationships
-      await tx
-        .delete(notesToTags)
-        .where(sql`${notesToTags.noteId} = ${updatedNote.id}`)
+      // Process tags in a separate transaction
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(notesToTags)
+          .where(sql`${notesToTags.noteId} = ${directUpdateResult.id}`)
 
-      if (tagNames.length > 0) {
-        // Batch tag operations for better performance
-        const existingTags = await tx
-          .select()
-          .from(tags)
-          .where(sql`${tags.name} = ANY(ARRAY[${tagNames}]::text[])`)
+        if (tagNames.length > 0) {
+          const existingTags = await tx
+            .select()
+            .from(tags)
+            .where(
+              sql`${tags.name} IN (${tagNames.map((tag) => `'${tag.replace(/'/g, "''")}'`).join(',')})`,
+            )
 
-        const existingTagNames = new Set(existingTags.map((tag) => tag.name))
-        const newTagNames = tagNames.filter(
-          (name) => !existingTagNames.has(name),
-        )
+          const existingTagsByName = new Map(
+            existingTags.map((tag) => [tag.name, tag]),
+          )
 
-        // Create new tags in batch if needed
-        let newTags: typeof existingTags = []
-        if (newTagNames.length > 0) {
-          newTags = await tx
-            .insert(tags)
-            .values(
-              newTagNames.map((name) => ({
-                userId: user.id,
-                name,
+          const newTagNames = tagNames.filter(
+            (name) => !existingTagsByName.has(name),
+          )
+          let newTags: typeof existingTags = []
+
+          if (newTagNames.length > 0) {
+            try {
+              newTags = await tx
+                .insert(tags)
+                .values(
+                  newTagNames.map((name) => ({
+                    userId: user.id,
+                    name,
+                  })),
+                )
+                .returning()
+            } catch (error) {
+              if (
+                error instanceof Error &&
+                'code' in error &&
+                error.code === '23505'
+              ) {
+                const additionalTags = await tx
+                  .select()
+                  .from(tags)
+                  .where(
+                    sql`${tags.name} IN (${newTagNames.map((tag) => `'${tag.replace(/'/g, "''")}'`).join(',')})`,
+                  )
+                newTags = additionalTags
+              } else {
+                throw error
+              }
+            }
+          }
+
+          const allTags = [...existingTags, ...newTags]
+
+          if (allTags.length > 0) {
+            await tx.insert(notesToTags).values(
+              allTags.map((tag) => ({
+                noteId: directUpdateResult.id,
+                tagId: tag.id,
               })),
             )
-            .returning()
+          }
         }
+      })
 
-        // Create all note-to-tag relationships in one batch
-        const allTags = [...existingTags, ...newTags]
-        await tx.insert(notesToTags).values(
-          allTags.map((tag) => ({
-            noteId: updatedNote.id,
-            tagId: tag.id,
-          })),
+      // Verify the update after everything is done
+      const [verifiedNote] = await db
+        .select()
+        .from(notes)
+        .where(sql`id = ${noteId.toString()} AND user_id = ${user.id}`)
+
+      console.log('Final verification:', verifiedNote)
+
+      if (!verifiedNote || verifiedNote.title !== title) {
+        throw new Error(
+          'Update verification failed - changes were not persisted',
         )
       }
 
+      // Revalidate paths
       revalidatePath('/')
+      revalidatePath('/notes')
+      revalidatePath(`/notes/${directUpdateResult.id}`)
+      revalidatePath('/tags')
+
       return toActionState({
         status: 'SUCCESS',
         message: 'Note updated successfully',
       })
-    })
+    } catch (error) {
+      console.error('Error updating note:', error)
+      return fromErrorToActionState(error, formData)
+    }
   } catch (error) {
+    console.error({ error })
     return fromErrorToActionState(error, formData)
   }
 }
@@ -214,6 +291,10 @@ export async function deleteNote(noteId: string): Promise<ActionState> {
     }
 
     revalidatePath('/')
+    revalidatePath('/notes')
+    revalidatePath(`/notes/${deletedNote.id}`)
+    revalidatePath('/tags')
+
     return toActionState({
       status: 'SUCCESS',
       message: 'Note deleted successfully',
