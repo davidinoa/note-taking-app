@@ -7,7 +7,7 @@ export async function fetchNotes(userId: string) {
   cacheTag('notes')
   return await db.query.notes
     .findMany({
-      where: eq(notes.userId, userId),
+      where: and(eq(notes.userId, userId), eq(notes.status, 'published')),
       with: {
         notesToTags: {
           with: {
