@@ -1,12 +1,18 @@
 'use server'
 
+import { CACHE_TAGS } from '@/lib/cache-tags'
 import type { ActionState } from '@/lib/utils/to-action-state'
 import { db, notes, notesToTags, tags } from '@/server/db'
 import { currentUser } from '@clerk/nextjs/server'
 import { sql } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { ZodError } from 'zod'
+import { archiveNote as archiveNoteDb } from './db'
 import { createFormSchema } from './schema'
+
+// Get static tags once
+const notesTag = CACHE_TAGS.notes()
+const tagsTag = CACHE_TAGS.tags()
 
 export async function createNote(
   _prevState: ActionState,
@@ -95,10 +101,11 @@ export async function createNote(
         )
       }
 
-      revalidatePath('/')
-      revalidatePath('/notes')
-      revalidatePath(`/notes/${note.id}`)
-      revalidatePath('/tags')
+      revalidateTag(notesTag)
+      revalidateTag(tagsTag)
+      if (tagNames.length > 0) {
+        revalidateTag(tagsTag)
+      }
 
       return toActionState({
         status: 'SUCCESS',
@@ -248,11 +255,8 @@ export async function updateNote(
         )
       }
 
-      // Revalidate paths
-      revalidatePath('/')
-      revalidatePath('/notes')
-      revalidatePath(`/notes/${directUpdateResult.id}`)
-      revalidatePath('/tags')
+      revalidateTag(notesTag)
+      revalidateTag(tagsTag)
 
       return toActionState({
         status: 'SUCCESS',
@@ -290,10 +294,8 @@ export async function deleteNote(noteId: string): Promise<ActionState> {
       })
     }
 
-    revalidatePath('/')
-    revalidatePath('/notes')
-    revalidatePath(`/notes/${deletedNote.id}`)
-    revalidatePath('/tags')
+    revalidateTag(notesTag)
+    revalidateTag(tagsTag)
 
     return toActionState({
       status: 'SUCCESS',
@@ -305,6 +307,30 @@ export async function deleteNote(noteId: string): Promise<ActionState> {
       status: 'ERROR',
       message: 'Failed to delete note',
     })
+  }
+}
+
+export async function archiveNote(noteId: string): Promise<ActionState> {
+  const user = await currentUser()
+  if (!user?.id) {
+    return toActionState({
+      status: 'ERROR',
+      message: 'You must be logged in to archive notes',
+    })
+  }
+
+  try {
+    await archiveNoteDb(noteId)
+
+    revalidateTag(notesTag)
+    revalidateTag(tagsTag)
+
+    return toActionState({
+      status: 'SUCCESS',
+      message: 'Note archived successfully',
+    })
+  } catch (error) {
+    return fromErrorToActionState(error, new FormData())
   }
 }
 

@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { createNote, deleteNote, updateNote } from './actions'
+import { archiveNote, createNote, deleteNote, updateNote } from './actions'
 
 type NoteFormProps = {
   note?: typeof notes.$inferSelect & { tags: string[] }
@@ -35,7 +35,7 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
         actionState.message ||
           `Note ${mode === 'create' ? 'created' : 'updated'} successfully!`,
       )
-      router.push('/')
+      router.push('/notes')
     },
     onError: ({ actionState }) => {
       toast.error(
@@ -53,9 +53,25 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
         const result = await deleteNote(note.id)
         if (result.status === 'SUCCESS') {
           toast.success(result.message || 'Note deleted successfully')
-          router.push('/')
+          router.push('/notes')
         } else {
           toast.error(result.message || 'Failed to delete note')
+        }
+      })
+    }
+  }
+
+  const handleArchive = () => {
+    if (!note?.id || mode !== 'edit') return
+
+    if (confirm('Are you sure you want to archive this note?')) {
+      startTransition(async () => {
+        const result = await archiveNote(note.id)
+        if (result.status === 'SUCCESS') {
+          toast.success(result.message || 'Note archived successfully')
+          router.push('/notes')
+        } else {
+          toast.error(result.message || 'Failed to archive note')
         }
       })
     }
@@ -69,7 +85,7 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
         <input type="hidden" name="id" value={note.id} />
       )}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Link href="/">
+        <Link href="/notes">
           <Button
             variant="ghost"
             className="flex items-center gap-2"
@@ -83,10 +99,9 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
             variant="ghost"
             size="icon"
             type="button"
-            onClick={() => {
-              // Add archive handler
-            }}
-            title="Archive note">
+            onClick={handleArchive}
+            title="Archive note"
+            disabled={mode !== 'edit'}>
             <Archive className="h-4 w-4" />
           </Button>
           <Button
@@ -98,7 +113,7 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
             disabled={mode !== 'edit' || isPendingDelete}>
             <Trash2 className="text-destructive h-4 w-4" />
           </Button>
-          <Link href="/">
+          <Link href="/notes">
             <Button variant="ghost" type="button">
               Cancel
             </Button>
