@@ -5,12 +5,18 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useActionFeedback } from '@/hooks/use-action-feedback'
 import { type notes } from '@/server/db/schema'
-import { Archive, ArrowLeft, Clock, Tag, Trash2 } from 'lucide-react'
+import { Archive, ArrowLeft, Clock, RotateCcw, Tag, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useActionState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { archiveNote, createNote, deleteNote, updateNote } from './actions'
+import {
+  archiveNote,
+  createNote,
+  deleteNote,
+  restoreNote,
+  updateNote,
+} from './actions'
 
 type NoteFormProps = {
   note?: typeof notes.$inferSelect & { tags: string[] }
@@ -77,6 +83,22 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
     }
   }
 
+  const handleRestore = () => {
+    if (!note?.id || mode !== 'edit') return
+
+    if (confirm('Are you sure you want to restore this note?')) {
+      startTransition(async () => {
+        const result = await restoreNote(note.id)
+        if (result.status === 'SUCCESS') {
+          toast.success(result.message || 'Note restored successfully')
+          router.push('/notes')
+        } else {
+          toast.error(result.message || 'Failed to restore note')
+        }
+      })
+    }
+  }
+
   return (
     <form
       action={formAction}
@@ -99,20 +121,50 @@ export default function NoteForm({ note, mode = 'create' }: NoteFormProps) {
             variant="ghost"
             size="icon"
             type="button"
-            onClick={handleArchive}
-            title="Archive note"
-            disabled={mode !== 'edit'}>
-            <Archive className="h-4 w-4" />
+            title="Last updated"
+            disabled>
+            <Clock className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             type="button"
-            onClick={handleDelete}
-            title="Delete note"
-            disabled={mode !== 'edit' || isPendingDelete}>
-            <Trash2 className="text-destructive h-4 w-4" />
+            title="Tags"
+            disabled>
+            <Tag className="h-4 w-4" />
           </Button>
+          {mode === 'edit' && note && (
+            <>
+              {note.status === 'archived' ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  title="Restore note"
+                  onClick={handleRestore}>
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  title="Archive note"
+                  onClick={handleArchive}>
+                  <Archive className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                type="button"
+                title="Delete note"
+                onClick={handleDelete}
+                disabled={isPendingDelete}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
           <Link href="/notes">
             <Button variant="ghost" type="button">
               Cancel

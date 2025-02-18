@@ -49,6 +49,10 @@ export default function NotesList({ notesWithTags }: NotesListProps) {
             </time>
           </Link>
         ))}
+        <p className="text-muted-foreground text-center text-sm">
+          {notesWithTags.length} {notesWithTags.length === 1 ? 'note' : 'notes'}{' '}
+          total
+        </p>
       </div>
     </div>
   )

@@ -53,3 +53,33 @@ export async function fetchNoteById(noteId: string, userId: string) {
     tags: note.notesToTags.map((ntt) => ntt.tag.name),
   }
 }
+
+export async function fetchArchivedNotes(userId: string) {
+  'use cache'
+  cacheTag('archived-notes')
+  return await db.query.notes
+    .findMany({
+      where: and(eq(notes.userId, userId), eq(notes.status, 'archived')),
+      with: {
+        notesToTags: {
+          with: {
+            tag: true,
+          },
+        },
+      },
+      orderBy: (notes, { desc }) => [desc(notes.createdAt)],
+    })
+    .then((notes) =>
+      notes.map(({ notesToTags, ...noteWithoutRelation }) => ({
+        ...noteWithoutRelation,
+        tags: notesToTags.map((ntt) => ntt.tag.name),
+      })),
+    )
+}
+
+export async function restoreNote(noteId: string) {
+  return await db
+    .update(notes)
+    .set({ status: 'draft', updatedAt: new Date() })
+    .where(eq(notes.id, noteId))
+}

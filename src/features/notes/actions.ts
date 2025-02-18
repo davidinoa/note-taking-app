@@ -7,7 +7,10 @@ import { currentUser } from '@clerk/nextjs/server'
 import { sql } from 'drizzle-orm'
 import { revalidateTag } from 'next/cache'
 import { ZodError } from 'zod'
-import { archiveNote as archiveNoteDb } from './db'
+import {
+  archiveNote as archiveNoteDb,
+  restoreNote as restoreNoteDb,
+} from './db'
 import { createFormSchema } from './schema'
 
 // Get static tags once
@@ -331,6 +334,31 @@ export async function archiveNote(noteId: string): Promise<ActionState> {
     })
   } catch (error) {
     return fromErrorToActionState(error, new FormData())
+  }
+}
+
+export async function restoreNote(noteId: string): Promise<ActionState> {
+  const user = await currentUser()
+  if (!user?.id) {
+    return toActionState({
+      status: 'ERROR',
+      message: 'You must be logged in to restore notes',
+    })
+  }
+
+  try {
+    await restoreNoteDb(noteId)
+    revalidateTag(notesTag)
+    return toActionState({
+      status: 'SUCCESS',
+      message: 'Note restored successfully',
+    })
+  } catch (error) {
+    console.error(error)
+    return toActionState({
+      status: 'ERROR',
+      message: 'Failed to restore note',
+    })
   }
 }
 
