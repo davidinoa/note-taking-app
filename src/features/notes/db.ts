@@ -80,6 +80,6 @@ export async function fetchArchivedNotes(userId: string) {
 export async function restoreNote(noteId: string) {
   return await db
     .update(notes)
-    .set({ status: 'draft', updatedAt: new Date() })
+    .set({ status: 'published', updatedAt: new Date() })
     .where(eq(notes.id, noteId))
 }

@@ -349,6 +349,7 @@ export async function restoreNote(noteId: string): Promise<ActionState> {
   try {
     await restoreNoteDb(noteId)
     revalidateTag(notesTag)
+    revalidateTag('archived-notes')
     return toActionState({
       status: 'SUCCESS',
       message: 'Note restored successfully',

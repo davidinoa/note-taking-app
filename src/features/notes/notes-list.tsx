@@ -6,26 +6,34 @@ import Link from 'next/link'
 
 type NotesListProps = {
   notesWithTags: (typeof notes.$inferSelect & { tags: string[] })[]
+  basePath?: string
+  showCreateButton?: boolean
 }
 
-export default function NotesList({ notesWithTags }: NotesListProps) {
+export default function NotesList({
+  notesWithTags,
+  basePath = '/notes',
+  showCreateButton = true,
+}: NotesListProps) {
   return (
     <div className="mx-auto space-y-4 p-3 pt-6 sm:space-y-6 sm:p-4">
-      <Button
-        asChild
-        className="h-12 w-full text-base sm:h-14 sm:text-lg"
-        size="lg">
-        <Link href="/notes/new">
-          <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-          Create New Note
-        </Link>
-      </Button>
+      {showCreateButton && (
+        <Button
+          asChild
+          className="h-12 w-full text-base sm:h-14 sm:text-lg"
+          size="lg">
+          <Link href="/notes/new">
+            <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+            Create New Note
+          </Link>
+        </Button>
+      )}
 
       <div className="space-y-3 pb-24 sm:space-y-4">
         {notesWithTags.map((note) => (
           <Link
             key={note.id}
-            href={`/notes/${note.id}`}
+            href={`${basePath}/${note.id}`}
             className="block rounded-lg p-3 transition-colors hover:bg-gray-50 sm:p-4">
             <h2 className="mb-2 text-base font-semibold sm:text-lg">
               {note.title}

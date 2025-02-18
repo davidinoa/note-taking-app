@@ -1,6 +1,6 @@
 import AppHeader from '@/components/app-header'
 import { MenuBar } from '@/components/menu-bar'
-import Sidebar from '@/components/sidebar'
+import SidebarContainer from '@/components/sidebar-container'
 import { Toaster } from '@/components/ui/toaster'
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/nextjs'
 import type { Metadata } from 'next'
@@ -72,7 +72,7 @@ export default async function RootLayout({
               <div className="ds-md:grid hidden h-screen grid-rows-[auto_1fr_auto]">
                 <AppHeader />
                 <div className="flex overflow-hidden">
-                  <Sidebar />
+                  <SidebarContainer />
                   <div className="grid grow grid-rows-1 overflow-hidden">
                     {children}
                   </div>
